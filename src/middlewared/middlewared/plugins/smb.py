@@ -520,7 +520,8 @@ class SMBService(SystemServiceService):
         if await self.middleware.call('cache.has_key', 'SMB_HA_MODE'):
             return await self.middleware.call('cache.get', 'SMB_HA_MODE')
 
-        gl_enabled = (await self.middleware.call('service.query', [('service', '=', 'glusterd')], {'get': True}))['enable']
+        gl_enabled = True
+        #gl_enabled = (await self.middleware.call('service.query', [('service', '=', 'glusterd')], {'get': True}))['enable']
 
         if gl_enabled:
             hamode = SMBHAMODE['CLUSTERED'].name
