@@ -4,6 +4,8 @@ from middlewared.client import Client
 import asyncio
 import inspect
 import os
+import socket
+
 import setproctitle
 
 from . import logger
@@ -99,7 +101,13 @@ def main_worker(*call_args):
 
 
 def receive_events():
-    c = Client('ws+unix:///var/run/middlewared-internal.sock', py_exceptions=True)
+    while True:
+        try:
+            c = Client('ws+unix:///var/run/middlewared-internal.sock', py_exceptions=True)
+            break
+        except socket.timeout:
+            MIDDLEWARE.logger.warning("Timeout connecting to middlewared internal socket, retrying...")
+
     c.subscribe('core.environ', lambda *args, **kwargs: environ_update(kwargs['fields']))
     c.subscribe('core.reconfigure_logging', lambda *args, **kwargs: logger.reconfigure_logging())
 
