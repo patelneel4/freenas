@@ -117,13 +117,13 @@ class SMBService(Service):
 
         ret = {
             "id": 1,
-            "netbiosname": reg_globals.pop("tn:netbiosname"),
-            "netbiosname_b": reg_globals.pop("tn:netbiosname_b"),
+            "netbiosname": reg_globals.pop("tn:netbiosname", "truenas"),
+            "netbiosname_b": reg_globals.pop("tn:netbiosname_b", "truenas-b"),
             "netbiosname_local": reg_globals.pop("netbios name", ""),
             "workgroup": reg_globals.pop("workgorup", "WORKGROUP"),
-            "cifs_SID": reg_globals.pop("tn:sid", None),
+            "cifs_SID": reg_globals.pop("tn:sid", ""),
             "netbiosalias": (reg_globals.pop("netbios aliases", "")).split(),
-            "description": reg_globals.pop("server string"),
+            "description": reg_globals.pop("server string", ""),
             "enable_smb1": reg_globals.pop("server min protocol", "SMB2_10") == "NT1",
             "unixcharset": reg_globals.pop("unix charset", "UTF8"),
             "syslog": reg_globals.pop("syslog only", "No") == "Yes",
@@ -135,11 +135,11 @@ class SMBService(Service):
             "filemask": reg_globals.pop("create mask", "0775"),
             "dirmask": reg_globals.pop("directory mask", "0775"),
             "ntlmv1_auth": reg_globals.pop("ntlm auth", "No") == "Yes",
-            "bind ip": bind_ips,
+            "bindip": bind_ips,
         }
-        reg_globals.pop('logging')
+        reg_globals.pop('logging', "file")
         aux_list = [f"{k} = {v}" for k, v in reg_globals.items()]
-        ret['smb_options'] = aux_list
+        ret['smb_options'] = '\n'.join(aux_list)
         return ret
 
     @private
@@ -288,7 +288,7 @@ class SMBService(Service):
                 continue
             to_set.update({kv[0]: kv[1]})
 
-        await self.add_bind_interfaces(to_set, data['bindip'])
+        await self.add_bind_interfaces(to_set, data.get('bindip', []))
         return to_set
 
     @private

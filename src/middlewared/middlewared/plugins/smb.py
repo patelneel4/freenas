@@ -430,6 +430,15 @@ class SMBService(SystemServiceService):
                                 load.stderr.decode())
 
     @private
+    async def ctdb_wait(self):
+        while True:
+            healthy = await self.middleware.call('ctdb.general.healthy')
+            if healthy:
+                return
+
+            await asyncio.sleep(1)
+
+    @private
     @job(lock="smb_configure")
     async def configure(self, job, create_paths=True):
         """
@@ -452,14 +461,24 @@ class SMBService(SystemServiceService):
         This initializes them in the above order so that configuration errors
         do not occur.
         """
-        job.set_progress(25, 'generating SMB, idmap, and directory service config.')
-        await self.middleware.call('smb.initialize_globals')
-
         if ha_mode == SMBHAMODE.CLUSTERED:
+            """
+            Cluster should be healthy before we start synchonizing configuration.
+            """
+            job.set_progress(25, 'Waiting for ctdb to become healthy.')
+            await self.ctdb_wait()
+            job.set_progress(30, 'Generating SMB, idmap, and directory service config.')
+            await self.middleware.call('smb.initialize_globals')
             ad_enabled = (await self.middleware.call('smb.getparm', 'security', 'global')) == 'ADS'
-            ldap_enabled = (await self.middleware.call('directoryservices.get_conf', 'directoryservice.ldap'))['enable']
+            """
+            Clustered LDAP client is currently not implemented.
+            """
+            # ldap_enabled = (await self.middleware.call('directoryservices.get_conf', 'directoryservice.ldap'))['enable']
+            ldap_enabled = False
             await self.middleware.call('idmap.ctdb_setup')
         else:
+            job.set_progress(25, 'generating SMB, idmap, and directory service config.')
+            await self.middleware.call('smb.initialize_globals')
             ad_enabled = (await self.middleware.call('activedirectory.config'))['enable']
             ldap_enabled = (await self.middleware.call('ldap.config'))['enable']
             await self.middleware.call('idmap.synchronize')
@@ -520,8 +539,7 @@ class SMBService(SystemServiceService):
         if await self.middleware.call('cache.has_key', 'SMB_HA_MODE'):
             return await self.middleware.call('cache.get', 'SMB_HA_MODE')
 
-        gl_enabled = True
-        #gl_enabled = (await self.middleware.call('service.query', [('service', '=', 'glusterd')], {'get': True}))['enable']
+        gl_enabled = (await self.middleware.call('service.query', [('service', '=', 'glusterd')], {'get': True}))['enable']
 
         if gl_enabled:
             hamode = SMBHAMODE['CLUSTERED'].name

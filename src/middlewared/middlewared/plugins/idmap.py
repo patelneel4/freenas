@@ -10,7 +10,6 @@ from middlewared.utils import run, filter_list
 from middlewared.validators import Range
 from middlewared.plugins.smb import SMBCmd, WBCErr, SMBHAMODE
 
-
 class DSType(enum.Enum):
     """
     The below DS_TYPES are defined for use as system domains for idmap backends.
@@ -758,7 +757,7 @@ class IdmapDomainService(CRUDService):
         return await self.reg_delete(id)
 
     @filterable
-    async def query(self, filters=None, options=None):
+    async def query(self, filters, options):
         """
         Query shares with filters. In clustered environments, local datastore query
         is bypassed in favor of clustered registry.
@@ -1005,7 +1004,7 @@ class IdmapDomainService(CRUDService):
         await self.middleware.call('smb.reg_apply_conf_diff', diff)
 
     @private
-    async def ctdb_idmap_setup(self):
+    async def ctdb_setup(self):
         """
         A totally uninitialized smb.conf in registry will have no idamp
         range set for the default domain. Use this as test to determine

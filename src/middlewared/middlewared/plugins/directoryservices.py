@@ -376,7 +376,7 @@ class DirectoryServices(Service):
         with DirectorySecrets(logger=self.logger, ha_mode=ha_mode) as s:
             conf = s.get_conf(schema)
 
-        rv = conf.decode()
+        rv = conf.decode() if conf else None
         if not rv:
             if schema == "directoryservice.activedirectory":
                 return DEFAULT_AD_CONF

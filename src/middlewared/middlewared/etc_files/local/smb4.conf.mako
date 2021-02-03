@@ -11,8 +11,9 @@
     % if failover_status in ('SINGLE', 'MASTER'):
     % if smb_ha_mode == "CLUSTERED":
     clustering = Yes
+    ctdb:registry.tdb = Yes
     % endif
-    config backend = registry
+    include = registry
     % else:
     netbiosname = TN_STANDBY
     % endif

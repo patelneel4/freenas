@@ -416,7 +416,7 @@ class ActiveDirectoryService(ConfigService):
             'allow_trusted_domains': globals.get('allow trusted domains', 'No') == 'Yes',
             'ads_dns_updates': globals.get('ads dns updates', 'No') == 'Yes',
             'nss_info': globals.get('winbind nss info', ''),
-            'enabled': globals.get('security', 'user') == 'ADS',
+            'enable': globals.get('security', 'user') == 'ADS',
         })
         return await self.middleware.call(self._config.datastore_extend, rv)
 
