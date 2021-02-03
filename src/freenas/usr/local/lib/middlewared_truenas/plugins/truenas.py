@@ -120,6 +120,15 @@ class TrueNASService(Service):
         return 'TRUENAS-UNKNOWN'
 
     @accepts()
+    async def get_chassis_series(self):
+        hardware = await self.middleware.call('truenas.get_chassis_hardware')
+        if hardware == 'TRUENAS-UNKNOWN':
+            return None
+        if hardware == 'TRUENAS-MINI':
+            return 'MINI'
+        return hardware[8]
+
+    @accepts()
     def get_eula(self):
         """
         Returns the TrueNAS End-User License Agreement (EULA).

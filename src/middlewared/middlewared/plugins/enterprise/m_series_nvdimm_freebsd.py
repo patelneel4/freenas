@@ -74,5 +74,5 @@ class EnterpriseService(Service):
 
 
 async def setup(middleware):
-    if (await middleware.call("truenas.get_chassis_hardware")).startswith("TRUENAS-M"):
+    if await middleware.call("truenas.get_chassis_series") == "M":
         await middleware.call("enterprise.setup_m_series_nvdimm")

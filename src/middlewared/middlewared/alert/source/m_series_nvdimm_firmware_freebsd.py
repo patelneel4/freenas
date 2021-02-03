@@ -24,7 +24,7 @@ class TrueNASMNVDIMMFirmwareVersionAlertSource(AlertSource):
     products = ("ENTERPRISE",)
 
     async def check(self):
-        if (await self.middleware.call("truenas.get_chassis_hardware")).startswith("TRUENAS-M"):
+        if await self.middleware.call("truenas.get_chassis_series") == "M":
             for nvdimm in await self.middleware.call("enterprise.m_series_nvdimm"):
                 size_to_version = {16: "2.2", 32: "2.4"}
                 if nvdimm["size"] not in size_to_version:
