@@ -1231,6 +1231,28 @@ class SharingSMBService(SharingService):
         verrors.check()
 
     @private
+    async def cluster_share_validate(self, data, schema_name, verrors):
+        ha_mode = SMBHAMODE[(await self.middleware.call('smb.get_smb_ha_mode'))]
+        if ha_mode != SMBHAMODE.CLUSTERED:
+            return
+
+        if data['shadowcopy']:
+            verrors.add(
+                f'{schema_name}.shadowcopy',
+                'Shadow Copies are not implemented for clustered shares.'
+            )
+        if data['fsrvp']:
+            verrors.add(
+                f'{schema_name}.fsrvp',
+                'FSRVP support is not implemented for clustered shares.'
+            )
+        if not data['cluser_volname']:
+            verrors.add(
+                f'{schema_name}.cluster_volname',
+                'Cluster volume name is required for clustered shares.'
+            )
+
+    @private
     async def validate(self, data, schema_name, verrors, old=None):
         """
         Path is a required key in almost all cases. There is a special edge case for LDAP
@@ -1246,6 +1268,8 @@ class SharingSMBService(SharingService):
                         'Only one share is allowed to be a home share.')
 
         bypass = bool(data['cluster_volname'])
+
+        await self.cluster_share_validate(data, schema_name, verrors)
 
         if data['path']:
             await self.validate_path_field(data, schema_name, verrors, bypass=bypass)

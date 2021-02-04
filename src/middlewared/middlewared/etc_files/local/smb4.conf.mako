@@ -12,6 +12,7 @@
     % if smb_ha_mode == "CLUSTERED":
     clustering = Yes
     ctdb:registry.tdb = Yes
+    kernel share modes = No
     % endif
     include = registry
     % else:

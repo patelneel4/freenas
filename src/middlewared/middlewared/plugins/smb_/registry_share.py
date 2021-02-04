@@ -157,7 +157,7 @@ class SharingSMBService(Service):
     async def order_vfs_objects(self, vfs_objects):
         vfs_objects_special = ('catia', 'zfs_space', 'fruit', 'streams_xattr', 'shadow_copy_zfs',
                                'noacl', 'ixnas', 'acl_xattr', 'zfsacl', 'crossrename', 'recycle',
-                               'zfs_core', 'aio_fbsd', 'io_uring')
+                               'zfs_core', 'glusterfs', 'aio_fbsd', 'io_uring')
 
         vfs_objects_ordered = []
 
@@ -301,7 +301,7 @@ class SharingSMBService(Service):
             "purpose": "NO_PRESET",
             "path": conf_in.pop("path"),
             "path_suffix": "",
-            "home": conf_in.pop("home"),
+            "home": conf_in.pop("home", False),
             "name": conf_in.pop("name"),
             "guestok": conf_in.pop("guest ok", "yes") == "yes",
             "browsable": conf_in.pop("browseable", "yes") == "yes",
@@ -309,7 +309,7 @@ class SharingSMBService(Service):
             "hostsdeny": conf_in.pop("hosts deny", []),
             "abe": conf_in.pop("access based share enumeration", False),
             "acl": True if "acl_xattr" in vfs_objects else False,
-            "ro": conf_in.pop("read only") == "yes",
+            "ro": conf_in.pop("read only", "yes") == "yes",
             "durable handle": conf_in.pop("posix locking", "yes") == "no",
             "streams": True if "streams_xattr" in vfs_objects else False,
             "timemachine": conf_in.pop("fruit:time machine", False),
@@ -321,6 +321,7 @@ class SharingSMBService(Service):
             "shadowcopy": False,
             "aapl_name_mangling": True if "catia" in vfs_objects else False,
         }
+        cluster_logfile = conf_in.pop("glusterfs: logfile", "")
         aux_list = [f"{k} = {v}" for k, v in conf_in.items()]
         ret["auxsmbconf"] = '\n'.join(aux_list)
         return ret
@@ -331,6 +332,7 @@ class SharingSMBService(Service):
         gl = await self.get_global_params(globalconf)
         await self.middleware.call('sharing.smb.strip_comments', data)
         conf = {}
+        is_clustered = bool(data.get("cluster_volname", ""))
 
         if data['home'] and gl['ad_enabled']:
             data['path_suffix'] = '%D/%U'
@@ -344,6 +346,10 @@ class SharingSMBService(Service):
 
         if osc.IS_FREEBSD:
             data['vfsobjects'] = ['aio_fbsd']
+        elif is_clustered:
+            conf["glusterfs: volume"] = data["cluster_volume"]
+            conf["glusterfs: logfile"] = f'/var/log/samba4/glusterfs-{data["cluster_volume"]}.log'
+            data['vfsobjects'] = ['glusterfs', 'io_uring']
         else:
             data['vfsobjects'] = ['zfs_core', 'io_uring']
 
@@ -372,9 +378,6 @@ class SharingSMBService(Service):
             data['vfsobjects'].append('noacl')
         else:
             conf["nt acl support"] = "no"
-
-        if data["cluster_volname"]:
-            conf["glusterfs: volume"] = data["cluster_volume"]
 
         if data['recyclebin']:
             # crossrename is required for 'recycle' to work across sub-datasets
