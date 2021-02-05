@@ -1192,7 +1192,11 @@ class SharingSMBService(SharingService):
             'state directory',
             'private directory',
             'private dir',
+            'log level',
             'cache directory',
+            'clustering',
+            'ctdb socket',
+            'socket options',
         ]
         for entry in data.splitlines():
             if entry == '' or entry.startswith(('#', ';')):
@@ -1207,6 +1211,10 @@ class SharingSMBService(SharingService):
                 continue
 
             if kv[0].strip() in aux_blacklist:
+                """
+                This one checks our ever-expanding enumeration of badness.
+                Parameters are blacklisted if incorrect values can prevent smbd from starting.
+                """
                 verrors.add(
                     f'{schema_name}.auxsmbconf',
                     f'{kv[0]} is a blacklisted auxiliary parameter. Changes to this parameter '
