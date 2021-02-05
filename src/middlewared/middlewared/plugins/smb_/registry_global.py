@@ -253,7 +253,7 @@ class SMBService(Service):
         registry insertion. Optimization in this case to _only_ set bare minimum
         parameters to reflect the specified smb service configuration.
         """
-        loglevelint = LOGLEVEL_MAP.inv.get(data['loglevel'])
+        loglevelint = LOGLEVEL_MAP.inv.get(data['loglevel'], "MINIMUM")
         loglevel = f"{loglevelint} auth_json_audit:3@/var/log/samba4/auth_audit.log"
         if data['syslog']:
             logging = f'syslog@{"3" if loglevelint > 3 else data["loglevel"]} file'
